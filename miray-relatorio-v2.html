@@ -7,11 +7,10 @@
 
 <!-- Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Saira:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Saira:wght@500;700;800&display=swap" rel="stylesheet">
 
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 
 <style>
 /* ─────────────────────────────────────────────
@@ -95,7 +94,7 @@ section {
   min-height: 297mm;
   margin: 0 auto 10mm;
   padding: 18mm 12mm 24mm 12mm;
-  border: 1px solid rgba(255,255,255,.35);
+  border: none;
   box-sizing: border-box;
   break-after: page;
   page-break-after: always;
@@ -103,7 +102,7 @@ section {
   overflow: hidden;
 }
 
-/* Pílula no rodapé de cada bloco (tela); na impressão usa-se .page-print-footer (fixed por folha) */
+/* Pílula no rodapé de cada página interna */
 section::after {
   content: "Diagnóstico Estratégico Operacional";
   position: absolute;
@@ -155,11 +154,6 @@ section.hero::after {
   line-height: 1;
   z-index: 3;
   pointer-events: none;
-}
-
-/* Rodapé em pílula: impressão/PDF — repetido em cada folha (position: fixed) */
-.page-print-footer {
-  display: none;
 }
 
 /* ─────────────────────────────────────────────
@@ -515,14 +509,22 @@ section.hero::after {
 }
 
 .bn-icon {
-  width: 40px; height: 40px;
-  border-radius: 10px;
-  background: var(--green-dim);
-  display: flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: rgba(16,185,129,.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin-bottom: 20px;
 }
 
-.bn-icon svg { width: 18px; height: 18px; color: var(--green); }
+.bn-icon::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+}
 
 .bn-title {
   font-family: var(--font-display);
@@ -1058,30 +1060,6 @@ section.hero::after {
 }
 
 @media print {
-  .page-print-footer {
-    display: none !important;
-    position: fixed;
-    left: 50%;
-    bottom: 5mm;
-    transform: translateX(-50%);
-    z-index: 2147483647;
-    padding: 6px 14px 6px 32px;
-    border: 1px solid rgba(16, 185, 129, 0.34);
-    border-radius: 999px;
-    background:
-      radial-gradient(circle at 16px 50%, var(--green) 0 3px, transparent 4px),
-      rgba(16, 185, 129, 0.08);
-    color: var(--text-2);
-    font-family: var(--font-body);
-    font-size: 11px;
-    font-weight: 500;
-    line-height: 1;
-    white-space: nowrap;
-    pointer-events: none;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-
   html {
     background: var(--bg) !important;
   }
@@ -1099,7 +1077,18 @@ section.hero::after {
   }
 
   body::before {
-    display: block !important;
+    display: none !important;
+  }
+
+  .hero-glow,
+  .hero-grid,
+  .cta-glow {
+    display: none !important;
+  }
+
+  .bottleneck-card::before,
+  .cta-btn::before {
+    display: none !important;
   }
 
   section::before {
@@ -1128,7 +1117,7 @@ section.hero::after {
     height: 297mm !important;
     margin: 0 auto !important;
     padding: 18mm 12mm 24mm 12mm !important;
-    border: 1px solid rgba(255,255,255,.35);
+    border: none;
     box-shadow: none;
     break-after: page;
     page-break-after: always;
@@ -1346,137 +1335,126 @@ section.hero::after {
    ▶  EDITE AQUI — DADOS DA EMPRESA
 ═══════════════════════════════════════════ */
 
-const REPORT_DATA = {
-  cover: {
-    clientLogoUrl: "",
-    companyName: "Exemplo S.A.",
-    reportDate: "Maio 2026"
-  },
+const REPORT_DATA = [
+  {
+    "cover": {
+      "clientLogoUrl": "",
+      "companyName": "Exemplo S.A.",
+      "reportDate": "Maio 2026"
+    },
+    "summary": {
+      "text": "A Exemplo S.A. opera com processos comerciais estruturados, mas apresenta dependência crítica de execução manual em pontos de alto volume. O pipeline existe — o problema está na velocidade de conversão e na ausência de sinais de alerta precoce.\n\nNa operação, detectamos acúmulo sistemático de retrabalho por falta de padronização entre times. Tarefas que deveriam ser sistemáticas dependem do conhecimento tácito de pessoas específicas, criando gargalo de pessoa-chave e risco operacional real.\n\nA maturidade em dados é o principal freio de crescimento. Sem visibilidade em tempo real, as decisões de alocação chegam sempre tarde — e a empresa opera no escuro estratégico. O cenário não é de crise: é de capacidade represada. Com as alavancas certas, o desbloqueio pode acontecer em 60–90 dias."
+    },
+    "operationalSignals": [
+      {
+        "number": 1,
+        "signals_title": "Follow-up comercial manual",
+        "signals_description": "SDRs executam cadência sem automação. Oportunidades esfriam entre os contatos. Estima-se perda de 15–20% do pipeline qualificado por lentidão de resposta."
+      },
+      {
+        "number": 2,
+        "signals_title": "Ausência de dashboard unificado",
+        "signals_description": "Dados operacionais espalhados em planilhas desconectadas. Decisões chegam com 2–4 semanas de atraso. Visibilidade próxima de zero em tempo real."
+      },
+      {
+        "number": 3,
+        "signals_title": "Onboarding sem fluxo padronizado",
+        "signals_description": "Tempo médio de onboarding 3× acima do benchmark. NPS de ativação comprometido. Ausência de playbook e automação de Customer Success."
+      },
+      {
+        "number": 4,
+        "signals_title": "Qualificação de leads ausente",
+        "signals_description": "Volume alto de entrada sem critérios de ICP formalizados. Taxa de conversão abaixo do esperado. CAC elevado sem visibilidade estrutural da causa."
+      },
+      {
+        "number": 5,
+        "signals_title": "Gargalo de pessoa-chave",
+        "signals_description": "Processos operacionais críticos dependem de conhecimento tácito de indivíduos específicos. Risco de continuidade operacional em caso de ausência."
+      },
+      {
+        "number": 6,
+        "signals_title": "Stack de dados inexistente",
+        "signals_description": "Maturidade em IA e dados: 2.4/10. Sem instrumentação básica, qualquer iniciativa de inteligência operacional começa com um passo em falso."
+      }
+    ],
+    "strategicOpportunities": [
+      {
+        "title": "Automação de follow-up comercial",
+        "reasoning": "Resolve o maior gargalo comercial com esforço baixo. Retorno imediato em taxa de conversão sem dependência de engenharia.",
+        "description": "Implementação de cadência automática para oportunidades no pipeline, com triggers baseados em comportamento e temperatura do lead.",
+        "impact_score": 9,
+        "implementation_difficulty": 2,
+        "classification": "quick-win"
+      },
+      {
+        "title": "Dashboard operacional unificado",
+        "reasoning": "Habilita todas as iniciativas de IA posteriores. Sem dados visíveis, nenhuma outra melhoria sustenta.",
+        "description": "Centralização de métricas críticas de operação, comercial e financeiro em uma visão única e em tempo real.",
+        "impact_score": 8,
+        "implementation_difficulty": 3,
+        "classification": "quick-win"
+      },
+      {
+        "title": "Padronização de SLAs internos",
+        "reasoning": "Baixo custo de implementação, alto retorno em eficiência operacional. Sem dependência técnica.",
+        "description": "Definição e documentação de acordos de entrega entre times, eliminando retrabalho por falta de alinhamento.",
+        "impact_score": 5,
+        "implementation_difficulty": 2,
+        "classification": "quick-win"
+      },
+      {
+        "title": "Documentação de processos críticos",
+        "reasoning": "Mitigação de risco operacional imediata. Habilita escala de time sem degradação de qualidade.",
+        "description": "Criação de playbooks para processos operacionais de alto risco, reduzindo dependência de pessoas-chave.",
+        "impact_score": 4,
+        "implementation_difficulty": 2,
+        "classification": "melhoria-estrutural"
+      },
+      {
+        "title": "Motor de qualificação preditiva",
+        "reasoning": "Reduz CAC estruturalmente. Executável após dashboard estar ativo. Alto impacto em eficiência de vendas.",
+        "description": "Modelo de scoring de leads com dados históricos de conversão, alinhando esforço comercial ao ICP real da empresa.",
+        "impact_score": 10,
+        "implementation_difficulty": 7,
+        "classification": "moonshot"
+      },
+      {
+        "title": "Plataforma de onboarding guiado",
+        "reasoning": "Impacto direto em retenção e NPS de ativação. Libera time de CS para trabalho estratégico.",
+        "description": "Automação das etapas repetitivas de Customer Success com instrumentação de sinais de churn precoce.",
+        "impact_score": 9,
+        "implementation_difficulty": 6,
+        "classification": "moonshot"
+      },
+      {
+        "title": "ERP customizado interno",
+        "reasoning": "Alto esforço de engenharia com impacto difuso. Soluções prontas entregam 80% do resultado em 10% do tempo. Reconsiderar em 12 meses.",
+        "description": "Sistema proprietário de gestão operacional integrado com todos os fluxos da empresa.",
+        "impact_score": 4,
+        "implementation_difficulty": 9,
+        "classification": "baixa-prioridade"
+      }
+    ]
+  }
+];
 
-  summary: {
-    text: `A Exemplo S.A. opera com processos comerciais estruturados, mas apresenta dependência crítica de execução manual em pontos de alto volume. O pipeline existe — o problema está na velocidade de conversão e na ausência de sinais de alerta precoce.
-
-Na operação, detectamos acúmulo sistemático de retrabalho por falta de padronização entre times. Tarefas que deveriam ser sistemáticas dependem do conhecimento tácito de pessoas específicas, criando gargalo de pessoa-chave e risco operacional real.
-
-A maturidade em dados é o principal freio de crescimento. Sem visibilidade em tempo real, as decisões de alocação chegam sempre tarde — e a empresa opera no escuro estratégico. O cenário não é de crise: é de capacidade represada. Com as alavancas certas, o desbloqueio pode acontecer em 60–90 dias.`,
-  },
-
-  operationalSignals: [
-    {
-      number: 1,
-      icon: "zap",
-      title: "Follow-up comercial manual",
-      body: "SDRs executam cadência sem automação. Oportunidades esfriam entre os contatos. Estima-se perda de 15–20% do pipeline qualificado por lentidão de resposta."
-    },
-    {
-      number: 2,
-      icon: "monitor",
-      title: "Ausência de dashboard unificado",
-      body: "Dados operacionais espalhados em planilhas desconectadas. Decisões chegam com 2–4 semanas de atraso. Visibilidade próxima de zero em tempo real."
-    },
-    {
-      number: 3,
-      icon: "users",
-      title: "Onboarding sem fluxo padronizado",
-      body: "Tempo médio de onboarding 3× acima do benchmark. NPS de ativação comprometido. Ausência de playbook e automação de Customer Success."
-    },
-    {
-      number: 4,
-      icon: "funnel",
-      title: "Qualificação de leads ausente",
-      body: "Volume alto de entrada sem critérios de ICP formalizados. Taxa de conversão abaixo do esperado. CAC elevado sem visibilidade estrutural da causa."
-    },
-    {
-      number: 5,
-      icon: "triangle-alert",
-      title: "Gargalo de pessoa-chave",
-      body: "Processos operacionais críticos dependem de conhecimento tácito de indivíduos específicos. Risco de continuidade operacional em caso de ausência."
-    },
-    {
-      number: 6,
-      icon: "database",
-      title: "Stack de dados inexistente",
-      body: "Maturidade em IA e dados: 2.4/10. Sem instrumentação básica, qualquer iniciativa de inteligência operacional começa com um passo em falso."
-    }
-  ],
-
-  strategicOpportunities: [
-    {
-      impact: 9,
-      effort: 2,
-      classification: "quick-win",
-      title: "Automação de follow-up comercial",
-      body: "Implementação de cadência automática para oportunidades no pipeline, com triggers baseados em comportamento e temperatura do lead.",
-      justification: "Resolve o maior gargalo comercial com esforço baixo. Retorno imediato em taxa de conversão sem dependência de engenharia."
-    },
-    {
-      impact: 8,
-      effort: 3,
-      classification: "quick-win",
-      title: "Dashboard operacional unificado",
-      body: "Centralização de métricas críticas de operação, comercial e financeiro em uma visão única e em tempo real.",
-      justification: "Habilita todas as iniciativas de IA posteriores. Sem dados visíveis, nenhuma outra melhoria sustenta."
-    },
-    {
-      impact: 5,
-      effort: 2,
-      classification: "quick-win",
-      title: "Padronização de SLAs internos",
-      body: "Definição e documentação de acordos de entrega entre times, eliminando retrabalho por falta de alinhamento.",
-      justification: "Baixo custo de implementação, alto retorno em eficiência operacional. Sem dependência técnica."
-    },
-    {
-      impact: 4,
-      effort: 2,
-      classification: "melhoria-estrutural",
-      title: "Documentação de processos críticos",
-      body: "Criação de playbooks para processos operacionais de alto risco, reduzindo dependência de pessoas-chave.",
-      justification: "Mitigação de risco operacional imediata. Habilita escala de time sem degradação de qualidade."
-    },
-    {
-      impact: 10,
-      effort: 7,
-      classification: "moonshot",
-      title: "Motor de qualificação preditiva",
-      body: "Modelo de scoring de leads com dados históricos de conversão, alinhando esforço comercial ao ICP real da empresa.",
-      justification: "Reduz CAC estruturalmente. Executável após dashboard estar ativo. Alto impacto em eficiência de vendas."
-    },
-    {
-      impact: 9,
-      effort: 6,
-      classification: "moonshot",
-      title: "Plataforma de onboarding guiado",
-      body: "Automação das etapas repetitivas de Customer Success com instrumentação de sinais de churn precoce.",
-      justification: "Impacto direto em retenção e NPS de ativação. Libera time de CS para trabalho estratégico."
-    },
-    {
-      impact: 4,
-      effort: 9,
-      classification: "baixa-prioridade",
-      title: "ERP customizado interno",
-      body: "Sistema proprietário de gestão operacional integrado com todos os fluxos da empresa.",
-      justification: "Alto esforço de engenharia com impacto difuso. Soluções prontas entregam 80% do resultado em 10% do tempo. Reconsiderar em 12 meses."
-    }
-  ]
-};
-
-const COMPANY_LOGO = REPORT_DATA.cover.clientLogoUrl;
-const COMPANY_NAME = REPORT_DATA.cover.companyName;
-const COMPANY_DATE = REPORT_DATA.cover.reportDate;
-const summary = REPORT_DATA.summary.text;
-const possible_bottlenecks = REPORT_DATA.operationalSignals.map(item => ({
+const REPORT = REPORT_DATA[0];
+const COMPANY_LOGO = REPORT.cover.clientLogoUrl;
+const COMPANY_NAME = REPORT.cover.companyName;
+const COMPANY_DATE = REPORT.cover.reportDate;
+const summary = REPORT.summary.text;
+const possible_bottlenecks = REPORT.operationalSignals.map(item => ({
   number: item.number,
-  icon: item.icon,
-  title: item.title,
-  description: item.body
+  title: item.signals_title,
+  description: item.signals_description
 }));
-const opportunities = REPORT_DATA.strategicOpportunities.map(item => ({
-  impact: item.impact,
-  effort: item.effort,
+const opportunities = REPORT.strategicOpportunities.map(item => ({
+  impact: item.impact_score,
+  effort: item.implementation_difficulty,
   classification: item.classification,
   title: item.title,
-  description: item.body,
-  reasoning: item.justification
+  description: item.description,
+  reasoning: item.reasoning
 }));
 
 function calculateBigNumbers() {
@@ -1761,9 +1739,6 @@ function getRankedOpportunities() {
     .map((opp, index) => ({ ...opp, rank: index + 1 }));
 }
 
-function renderIcon(iconName) {
-  return `<i data-lucide="${iconName || 'circle-alert'}"></i>`;
-}
 
 /* ── DOM ── */
 function init() {
@@ -1814,7 +1789,7 @@ function init() {
     grid.innerHTML += `
       <div class="bottleneck-card">
         <div class="bn-number">${String(bn.number || i + 1).padStart(2, '0')}</div>
-        <div class="bn-icon">${renderIcon(bn.icon)}</div>
+        <div class="bn-icon"></div>
         <div class="bn-title">${bn.title}</div>
         <div class="bn-desc">${bn.description}</div>
       </div>
@@ -1823,10 +1798,6 @@ function init() {
 
   // opportunities
   renderOppCards();
-
-  if (window.lucide) {
-    window.lucide.createIcons();
-  }
 
   // chart
   initChart();
