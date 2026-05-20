@@ -1,0 +1,2149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diagnóstico Operacional · Miray</title>
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Saira:wght@500;700;800&display=swap" rel="stylesheet">
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<style>
+/* ─────────────────────────────────────────────
+   CONFIG
+───────────────────────────────────────────── */
+:root {
+  --bg:        #1c1c1c;
+  --bg-2:      #1c1c1c;
+  --card:      #242424;
+  --card-2:    #2b2b2b;
+  --card-3:    #333333;
+  --border:    rgba(255,255,255,.08);
+  --border-2:  rgba(16,185,129,.24);
+
+  --text:      #F1F5F9;
+  --text-2:    #FFFFFF;
+  --text-3:    #4B5A72;
+
+  --gray-15: #d9d9d9;
+  --gray-15: color-mix(in srgb, #ffffff 85%, #000000 15%);
+
+  --green:     #10B981;
+  --green-dim: rgba(16,185,129,.12);
+  --blue:      #3B82F6;
+  --blue-dim:  rgba(59,130,246,.12);
+  --purple:    #8B5CF6;
+  --purple-dim:rgba(139,92,246,.12);
+  --amber:     #F59E0B;
+  --amber-dim: rgba(245,158,11,.12);
+
+  --font-display: 'Saira', sans-serif;
+  --font-body:    'Inter', sans-serif;
+  --font-highlight: 'Inter', sans-serif;
+
+  --radius:    12px;
+  --radius-sm: 6px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: auto; }
+
+/* Sem animações / transições (relatório + PDF) */
+*, *::before, *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  font-weight: 400;
+  overflow-x: hidden;
+}
+
+/* ─────────────────────────────────────────────
+   NOISE TEXTURE OVERLAY
+───────────────────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: .5;
+}
+
+/* ─────────────────────────────────────────────
+   LAYOUT
+───────────────────────────────────────────── */
+.wrap { position: relative; z-index: 1; max-width: 100%; margin: 0 auto; padding: 0; }
+
+section {
+  width: 210mm;
+  max-width: 210mm;
+  height: 297mm;
+  min-height: 297mm;
+  margin: 0 auto 10mm;
+  padding: 18mm 12mm 24mm 12mm;
+  border: none;
+  box-sizing: border-box;
+  break-after: page;
+  page-break-after: always;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Pílula no rodapé de cada página interna */
+section::after {
+  content: "Diagnóstico Estratégico Operacional";
+  position: absolute;
+  left: 50%;
+  bottom: 12mm;
+  transform: translateX(-50%);
+  padding: 6px 14px 6px 32px;
+  border: 1px solid rgba(16, 185, 129, 0.34);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 16px 50%, var(--green) 0 3px, transparent 4px),
+    rgba(16, 185, 129, 0.08);
+  color: var(--text-2);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 2;
+}
+
+section::before {
+  content: "";
+  position: absolute;
+  left: 12mm;
+  bottom: 11mm;
+  width: 72px;
+  height: 24px;
+  background: url("https://res.cloudinary.com/dblwlsuqv/image/upload/v1778604036/Name_Branco_befiwz.svg") center / contain no-repeat;
+  pointer-events: none;
+  z-index: 2;
+}
+
+section.hero::before,
+section.hero::after {
+  display: none;
+}
+
+.page-number {
+  position: absolute;
+  right: 12mm;
+  bottom: 13mm;
+  color: var(--text-3);
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  line-height: 1;
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* ─────────────────────────────────────────────
+   SECTION LABEL
+───────────────────────────────────────────── */
+.section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--green);
+  margin-bottom: 20px;
+}
+
+.section-label::before {
+  content: '';
+  display: block;
+  width: 18px;
+  height: 1px;
+  background: var(--green);
+}
+
+.section-headline {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 3.5vw, 42px);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -.02em;
+  color: var(--text);
+  margin-bottom: 16px;
+}
+
+.section-sub {
+  font-size: 15px;
+  color: var(--text-2);
+  font-weight: 300;
+  max-width: 520px;
+  line-height: 1.7;
+}
+
+/* ─────────────────────────────────────────────
+   NAV
+───────────────────────────────────────────── */
+/* ─────────────────────────────────────────────
+   HERO
+───────────────────────────────────────────── */
+.hero {
+  min-height: 297mm;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-glow {
+  position: absolute;
+  top: -200px; left: 50%; transform: translateX(-50%);
+  width: 800px; height: 800px;
+  background: radial-gradient(circle, rgba(16,185,129,.12) 0%, transparent 65%);
+  pointer-events: none;
+}
+
+.hero-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 80% 80% at 50% 0%, black 30%, transparent 80%);
+  pointer-events: none;
+}
+
+.hero-inner {
+  position: relative;
+  z-index: 2;
+  width: min(100%, 152mm);
+  padding-top: 24mm;
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.report-logo {
+  position: absolute;
+  top: 24mm;
+  left: 18mm;
+  width: 132px;
+  height: auto;
+  object-fit: contain;
+  z-index: 3;
+}
+
+.hero-company {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 26px;
+}
+
+.company-logo-wrap {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  border: 1px solid var(--border-2);
+  background: var(--card-2);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+
+.company-logo-wrap img { width: 100%; height: 100%; object-fit: cover; }
+
+.company-logo-fallback {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--green);
+}
+
+.company-info h2 {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -.01em;
+}
+
+.company-info p {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+
+.hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(48px, 8.8vw, 82px);
+  font-weight: 800;
+  line-height: 1.0;
+  letter-spacing: -.04em;
+  color: var(--text);
+  margin-bottom: 28px;
+}
+
+.hero-title span {
+  background: linear-gradient(135deg, var(--green) 0%, #34D399 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-sub {
+  font-size: 16px;
+  font-weight: 300;
+  color: var(--gray-15);
+  max-width: 100%;
+  line-height: 1.75;
+  margin-bottom: 52px;
+}
+
+.hero-stats {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  overflow: hidden;
+  max-width: 640px;
+}
+
+.summary-stats {
+  max-width: 100%;
+  margin-top: auto;
+  margin-bottom: 20mm;
+}
+
+.summary-section .summary-stats.hero-stats {
+  max-width: 100%;
+  width: 100%;
+  align-self: stretch;
+}
+
+.summary-section .hero-stat {
+  padding: 36px 44px;
+}
+
+.summary-section .hero-stat-num {
+  font-size: clamp(28px, 3.2vw, 34px);
+}
+
+.summary-section .hero-stat-label {
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.hero-stat {
+  flex: 1;
+  padding: 22px 28px;
+  border-right: 1px solid var(--border);
+}
+
+.hero-stat:last-child { border-right: none; }
+
+.hero-stat-num {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -.03em;
+  color: var(--text);
+}
+
+.hero-stat-num.orange { color: #E63946; }
+.hero-stat-num.white  { color: #FFFFFF; }
+.hero-stat-num.green  { color: var(--green); }
+.hero-stat-num.blue   { color: var(--blue); }
+.hero-stat-num.purple { color: var(--purple); }
+
+.hero-stat-label {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: 4px;
+  letter-spacing: .02em;
+}
+
+/* ─────────────────────────────────────────────
+   DIVIDER
+───────────────────────────────────────────── */
+.divider {
+  height: 1px;
+  background: var(--border);
+  max-width: 210mm;
+  margin: 0 auto;
+  display: none;
+}
+
+/* ─────────────────────────────────────────────
+   SUMMARY
+───────────────────────────────────────────── */
+.summary-section {
+  background: var(--bg-2);
+  display: flex;
+  flex-direction: column;
+}
+
+.summary-section > .wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(297mm - 48mm);
+}
+
+.summary-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 40%) minmax(0, 60%);
+  gap: 32px 40px;
+  align-items: start;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.summary-sidebar {
+  position: static;
+}
+
+.summary-sidebar-tag {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--green);
+  margin-bottom: 16px;
+}
+
+.summary-sidebar h3 {
+  font-family: var(--font-display);
+  font-size: clamp(26px, 4.2vw, 40px);
+  font-weight: 700;
+  letter-spacing: -.03em;
+  line-height: 1.12;
+  color: var(--text);
+}
+
+.summary-sidebar-line {
+  width: 32px; height: 2px;
+  background: var(--green);
+  margin-top: 24px;
+  opacity: .4;
+}
+
+.summary-text {
+  font-size: 17px;
+  font-weight: 300;
+  color: var(--text-2);
+  line-height: 1.8;
+}
+
+.summary-text p { margin-bottom: 20px; }
+.summary-text p:last-child { margin-bottom: 0; }
+.summary-text strong { color: var(--text); font-family: var(--font-highlight); font-weight: 700; }
+
+.summary-text .green-highlight {
+  display: block;
+  color: var(--green);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+
+.summary-text,
+.bn-desc,
+.opp-desc,
+.opp-reasoning {
+  overflow-wrap: anywhere;
+  word-wrap: break-word;
+}
+
+/* ─────────────────────────────────────────────
+   BOTTLENECKS
+───────────────────────────────────────────── */
+.bottleneck-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+  margin-top: 56px;
+}
+
+.bottleneck-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  min-height: 210px;
+  padding: 28px;
+  position: relative;
+  overflow: visible;
+  cursor: default;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.bottleneck-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(16,185,129,.03) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.bottleneck-card:hover {
+  border-color: var(--border-2);
+}
+
+.bn-icon {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: rgba(16,185,129,.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.bn-icon::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+.bn-title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -.01em;
+  margin-bottom: 10px;
+  line-height: 1.3;
+}
+
+.bn-desc {
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.65;
+  font-weight: 300;
+}
+
+.bn-number {
+  position: absolute;
+  top: 20px; right: 24px;
+  font-family: var(--font-display);
+  font-size: 48px;
+  font-weight: 800;
+  color: rgba(255,255,255,.03);
+  letter-spacing: -.04em;
+  line-height: 1;
+}
+
+/* ─────────────────────────────────────────────
+   MATRIX
+───────────────────────────────────────────── */
+.matrix-section {
+  background: var(--bg);
+  padding: 16mm 10mm 17mm;
+}
+
+.matrix-wrap {
+  margin-top: 26px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.matrix-chart-container {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 10px 8px;
+  position: relative;
+  overflow: hidden;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.matrix-chart-inner {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  gap: 4px 10px;
+  width: 100%;
+  align-items: stretch;
+}
+
+.chart-canvas-wrap {
+  position: relative;
+  grid-column: 2;
+  grid-row: 1;
+  width: 100%;
+  min-height: 540px;
+  height: 168mm;
+}
+
+/* axis labels — dentro do grid, sem posição negativa */
+.axis-label-y {
+  grid-column: 1;
+  grid-row: 1;
+  position: static;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  width: 100%;
+  max-width: 40px;
+  margin: 0 auto;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  text-orientation: mixed;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+.axis-label-x {
+  grid-column: 2;
+  grid-row: 2;
+  position: static;
+  transform: none;
+  left: auto;
+  bottom: auto;
+  text-align: center;
+  padding: 2px 4px 0;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+/* matrix legend — dentro do mesmo card */
+.matrix-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 10px 18px;
+  margin: 0;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-2);
+  line-height: 1.2;
+}
+
+.legend-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ─────────────────────────────────────────────
+   OPPORTUNITIES
+───────────────────────────────────────────── */
+.opportunities-section {
+  background: var(--bg-2);
+}
+
+.opportunities-section .section-sub {
+  color: var(--gray-15);
+}
+
+.opportunities-section .opp-desc {
+  color: var(--gray-15);
+}
+
+.opportunities-section .opp-reasoning {
+  color: var(--gray-15);
+}
+
+.opportunities-section .metric-badge-label {
+  color: var(--gray-15);
+}
+
+.opp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
+  margin-top: 56px;
+}
+
+.continuation-section .bottleneck-grid,
+.continuation-section .opp-grid {
+  margin-top: 0;
+}
+
+.opp-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  min-height: 330px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  cursor: default;
+  position: relative;
+  overflow: visible;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.opp-card:hover {
+  border-color: var(--border-2);
+}
+
+.opp-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.opp-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.opp-rank-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: rgba(255,255,255,.16);
+  color: #FFFFFF;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.opp-cat-badge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.cat-win    { background: var(--green-dim);  color: var(--green); }
+.cat-moon   { background: var(--purple-dim); color: var(--purple); }
+.cat-struct { background: var(--blue-dim);   color: var(--blue); }
+.cat-low    { background: var(--amber-dim);  color: var(--amber); }
+
+.opp-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -.01em;
+  line-height: 1.3;
+}
+
+.opp-desc {
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.65;
+  font-weight: 300;
+}
+
+.opp-reasoning {
+  font-size: 12px;
+  color: var(--text-3);
+  line-height: 1.6;
+  padding: 12px 16px;
+  background: var(--card-2);
+  border-radius: var(--radius-sm);
+  border-left: 2px solid var(--border-2);
+  font-style: italic;
+}
+
+.opp-metrics {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.metric-badge {
+  flex: 1;
+  background: var(--card-2);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  text-align: center;
+}
+
+.metric-badge-label {
+  font-size: 10px;
+  color: var(--text-3);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.metric-badge-value {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -.02em;
+}
+
+.metric-badge-value.impact { color: var(--green); }
+.metric-badge-value.effort { color: #FF6A00; }
+
+/* glow line at top by category */
+.opp-card::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  border-radius: var(--radius) var(--radius) 0 0;
+  opacity: 0;
+}
+
+.opp-card:hover::after { opacity: 1; }
+.opp-card[data-cat="win"]::after    { background: var(--green); }
+.opp-card[data-cat="moon"]::after   { background: var(--purple); }
+.opp-card[data-cat="struct"]::after { background: var(--blue); }
+.opp-card[data-cat="low"]::after    { background: var(--amber); }
+
+/* ─────────────────────────────────────────────
+   CTA
+───────────────────────────────────────────── */
+.cta-section {
+  background: var(--bg);
+  position: relative;
+  overflow: hidden;
+}
+
+.cta-glow {
+  position: absolute;
+  bottom: -200px; left: 50%; transform: translateX(-50%);
+  width: 700px; height: 700px;
+  background: radial-gradient(circle, rgba(16,185,129,.07) 0%, transparent 65%);
+  pointer-events: none;
+}
+
+.cta-inner {
+  position: relative; z-index: 2;
+  min-height: calc(297mm - 48mm);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 48px;
+}
+
+.cta-left .eyebrow {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--green);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cta-left h2 {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 4vw, 52px);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -.04em;
+  color: var(--text);
+  margin-bottom: 24px;
+  max-width: 470px;
+}
+
+.cta-left h2 em {
+  font-family: var(--font-display);
+  font-style: normal;
+  color: var(--text-2);
+  font-weight: 700;
+}
+
+.cta-left p {
+  font-size: 15px;
+  font-weight: 300;
+  color: var(--text-2);
+  line-height: 1.75;
+  max-width: 390px;
+}
+
+.cta-right {
+  background: var(--card);
+  border: 1px solid var(--border-2);
+  border-radius: 16px;
+  width: 100%;
+  min-height: 108mm;
+  padding: 30px 34px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 26px;
+  align-items: stretch;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.cta-right-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  color: var(--text);
+  line-height: 1.25;
+}
+
+.cta-right-sub {
+  font-size: 14px;
+  color: var(--text-2);
+  font-weight: 300;
+  line-height: 1.7;
+  margin-top: 8px;
+  max-width: 360px;
+}
+
+.cta-features {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.cta-feature {
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 16px;
+  font-size: 14px;
+  color: var(--text-2);
+  line-height: 1.55;
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: rgba(255,255,255,.025);
+}
+
+.cta-feature span {
+  display: block;
+  max-width: none;
+}
+
+.cta-feature-icon {
+  width: 34px; height: 34px;
+  border-radius: 8px;
+  background: var(--green-dim);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.cta-feature-icon svg { width: 15px; height: 15px; color: var(--green); }
+
+.cta-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: auto;
+  min-width: 260px;
+  padding: 16px 28px;
+  background: var(--green);
+  color: #000;
+  border: none;
+  border-radius: 10px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  cursor: pointer;
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.cta-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,.15) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.cta-btn:hover {
+  box-shadow: 0 12px 40px rgba(16,185,129,.35);
+}
+
+.cta-note {
+  display: none;
+}
+
+.cta-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding-top: 6px;
+}
+
+/* ─────────────────────────────────────────────
+   RESPONSIVE (somente tela — evita que impressão/PDF herdem layout “mobile”)
+───────────────────────────────────────────── */
+@media screen and (max-width: 768px) {
+  .summary-inner { grid-template-columns: 1fr; gap: 40px; }
+  .cta-inner { min-height: auto; gap: 48px; }
+  .cta-right { grid-template-columns: 1fr; }
+  .cta-features { grid-template-columns: 1fr; }
+  .hero-stats { flex-direction: column; }
+  .hero-stat { border-right: none; border-bottom: 1px solid var(--border); }
+  .hero-stat:last-child { border-bottom: none; }
+  .axis-label-y, .axis-label-x { display: none; }
+  .matrix-chart-inner {
+    grid-template-columns: 1fr;
+    gap: 6px 0;
+  }
+  .chart-canvas-wrap {
+    grid-column: 1;
+    grid-row: 1;
+    min-height: 300px;
+    height: clamp(300px, 58vh, 560px);
+  }
+  .matrix-legend {
+    grid-column: 1;
+    grid-row: 2;
+    padding: 10px 4px 6px;
+  }
+}
+
+/* ─────────────────────────────────────────────
+   CUSTOM SCROLLBAR
+───────────────────────────────────────────── */
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+
+@media print {
+  html {
+    background: var(--bg) !important;
+  }
+
+  html,
+  body {
+    width: 100%;
+    max-width: none;
+    margin: 0 auto;
+    padding: 0;
+    background: var(--bg) !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    color-adjust: exact;
+  }
+
+  body::before {
+    display: none !important;
+  }
+
+  .hero-glow,
+  .hero-grid,
+  .cta-glow {
+    display: none !important;
+  }
+
+  .bottleneck-card::before,
+  .cta-btn::before {
+    display: none !important;
+  }
+
+  section::before {
+    display: block !important;
+  }
+
+  section.hero::before,
+  section.hero::after {
+    display: none !important;
+  }
+
+  section::after {
+    display: block !important;
+  }
+
+  .divider {
+    display: none !important;
+  }
+
+  /* Espaçamento “invisível”: padding no conteúdo (mesmo fundo #1c1c1c), sem margem @page branca */
+  section {
+    box-sizing: border-box;
+    width: 210mm !important;
+    max-width: 210mm !important;
+    min-height: 297mm !important;
+    height: 297mm !important;
+    margin: 0 auto !important;
+    padding: 18mm 12mm 24mm 12mm !important;
+    border: none;
+    box-shadow: none;
+    break-after: page;
+    page-break-after: always;
+    overflow: hidden !important;
+    background: var(--bg) !important;
+  }
+
+  .summary-section {
+    background: var(--bg-2) !important;
+  }
+
+  /* Capa: uma folha A4 com área útil já descontando o padding da section */
+  section.hero {
+    min-height: 297mm !important;
+  }
+
+  section:last-of-type {
+    break-after: auto;
+    page-break-after: auto;
+    padding-bottom: 24mm !important;
+  }
+
+  .hero {
+    min-height: calc(297mm - 18mm - 24mm) !important;
+    overflow: visible !important;
+  }
+
+  /* Resumo: metade esquerda (título) | metade direita (texto); stats no fim da página */
+  .summary-section > .wrap {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: calc(297mm - 18mm - 24mm) !important;
+  }
+
+  .summary-inner {
+    display: grid !important;
+    grid-template-columns: minmax(0, 40%) minmax(0, 60%) !important;
+    gap: 6mm 8mm !important;
+    align-items: start !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+  }
+
+  .summary-sidebar {
+    float: none !important;
+    width: auto !important;
+    max-width: none !important;
+    margin: 0 !important;
+    position: static !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .summary-text {
+    display: block !important;
+    overflow: visible !important;
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  .summary-stats {
+    clear: none !important;
+    margin-top: auto !important;
+    margin-bottom: 18mm !important;
+  }
+  .hero-stats,
+  .summary-stats.hero-stats {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .hero-stat {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    border-right: 1px solid var(--border) !important;
+    border-bottom: none !important;
+  }
+
+  .summary-section .hero-stat {
+    padding: 34px 32px !important;
+  }
+
+  .hero-stat:last-child {
+    border-right: none !important;
+  }
+
+  .bottleneck-grid,
+  .opp-grid {
+    break-inside: auto;
+    page-break-inside: auto;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+
+  /* Gargalos: quebra entre cards, não no meio do card */
+  .bottleneck-card {
+    min-height: 210px !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+
+  /* Oportunidades: mantém cada card inteiro para preservar leitura visual */
+  .opp-card {
+    min-height: 330px !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+
+  .metric-badge {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .matrix-wrap {
+    gap: 14px !important;
+  }
+
+  .matrix-chart-container {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .matrix-chart-inner {
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  .chart-canvas-wrap {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    height: 168mm !important;
+    min-height: 540px !important;
+    max-height: none;
+  }
+
+  .matrix-legend {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .cta-inner {
+    min-height: auto !important;
+    gap: 28px !important;
+  }
+
+  .cta-right {
+    min-height: auto !important;
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  .cta-feature {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .section-label,
+  .section-headline,
+  .summary-sidebar h3,
+  .hero-title {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  p,
+  .summary-text p,
+  .section-sub,
+  .hero-sub,
+  .bn-desc,
+  .opp-desc,
+  .opp-reasoning {
+    orphans: 4;
+    widows: 4;
+  }
+
+  /* Respiro extra em blocos longos (quebra entre páginas) */
+  .summary-text p + p {
+    margin-top: 0.35em;
+  }
+
+  .opp-card,
+  .bottleneck-card {
+    margin-bottom: 3mm;
+  }
+
+  .opp-card:last-child,
+  .bottleneck-card:last-child {
+    margin-bottom: 0;
+  }
+
+  a[href] {
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--card-3); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<script>
+/* ═══════════════════════════════════════════
+   ▶  EDITE AQUI — DADOS DA EMPRESA
+═══════════════════════════════════════════ */
+
+const REPORT_DATA = [
+  {
+    "cover": {
+      "clientLogoUrl": "data:image/jpeg;base64,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",
+      "companyName": "GV ADVOCACIA ESPECIALIZADA",
+      "reportDate": "Maio, 2026"
+    },
+    "summary": {
+      "text": "A TECTalk Consulting é uma consultoria educacional estratégica focada em comunicação, soft skills e inglês profissional, atuando em modelos B2B e B2C com forte presença online. Apesar de sua maturidade e oferta robusta, identificamos pontos de fricção que limitam seu crescimento e eficiência. Mapeamos gargalos operacionais no comercial, na padronização de processos e na gestão de desempenho. As dores apontam para um comercial que perde follow-up, dependência excessiva de indicações e um time sobrecarregado com atendimento. Encontramos oportunidades para otimizar vendas, padronizar operações, estruturar dados e automatizar o atendimento, visando impulsionar sua escalabilidade e previsibilidade."
+    },
+    "operationalSignals": [
+      {
+        "number": 1,
+        "signals_title": "Perda de Oportunidades no Funil Comercial",
+        "signals_description": "A falta de follow-up indica um processo de vendas ineficiente e a perda de leads qualificados, dependendo excessivamente de indicações."
+      },
+      {
+        "number": 2,
+        "signals_title": "Sobrecarga Operacional e Resistência à Escala",
+        "signals_description": "O time sobrecarregado e o alto consumo de energia com o suporte/atendimento ao cliente são sintomas de processos manuais intensos e falta de automação."
+      },
+      {
+        "number": 3,
+        "signals_title": "Fragmentação e Inconsistência de Processos",
+        "signals_description": "A falta de padronização implica em variações na entrega e execução, aumentando o esforço e reduzindo a qualidade percebida, além de dificultar o onboarding e a replicabilidade."
+      },
+      {
+        "number": 4,
+        "signals_title": "Deficiência na Gestão de Dados e Métricas",
+        "signals_description": "A ausência de clareza dos números e a falta de previsibilidade demonstram uma base de dados inadequada para análise e tomada de decisão estratégica."
+      },
+      {
+        "number": 5,
+        "signals_title": "Dependência Crítica de Conhecimento Tácito",
+        "signals_description": "A execução sem padronização e a sobrecarga indicam que muito do processo ainda reside no conhecimento individual, tornando a operação frágil e não escalável."
+      }
+    ],
+    "strategicOpportunities": [
+      {
+        "title": "Implementação de um CRM de Vendas",
+        "reasoning": "Resolve diretamente a dor do \"comercial perde follow-up\" e a \"dependência de indicação\", permitindo uma gestão proativa do funil e nutrição de leads.",
+        "description": "Estruturar um CRM para gerenciar leads, automatizar follow-ups e centralizar interações comerciais, reduzindo a perda de oportunidades e a dependência de memória individual.",
+        "impact_score": 9,
+        "implementation_difficulty": 7,
+        "classification": "moon"
+      },
+      {
+        "title": "Automação de Follow-ups Comerciais e Pós-Venda",
+        "reasoning": "Complementa o CRM ao automatizar parte da comunicação, liberando o time para interações de maior valor e combatendo a perda de follow-ups.",
+        "description": "Criar sequências de e-mails e lembretes automáticos para os estágios do funil de vendas e para acompanhamento de clientes após a compra, liberando o tempo do time comercial.",
+        "impact_score": 8,
+        "implementation_difficulty": 5,
+        "classification": "win"
+      },
+      {
+        "title": "Padronização de Processos de Onboarding de Clientes",
+        "reasoning": "Ataca a \"falta de padronização\" e a \"sobrecarga do time\" ao otimizar uma fase crítica da jornada do cliente, reduzindo atritos futuros e demandas de suporte.",
+        "description": "Mapear e padronizar o fluxo de onboarding para novos alunos e clientes corporativos, criando checklists, materiais de apoio e comunicações pré-definidas para garantir uma experiência consistente e eficiente.",
+        "impact_score": 7,
+        "implementation_difficulty": 4,
+        "classification": "win"
+      },
+      {
+        "title": "Criação de Dashboards de Performance para o Comercial e Operacional",
+        "reasoning": "Responde diretamente à \"falta de clareza dos números\" e \"time executa, mas sem previsibilidade\", transformando dados brutos em inteligência acionável.",
+        "description": "Desenvolver painéis visuais com métricas chave de vendas (funil, conversão, pipeline) e operacionais (taxa de conclusão de curso, satisfação do aluno, tempo de atendimento) para oferecer clareza dos números.",
+        "impact_score": 8,
+        "implementation_difficulty": 6,
+        "classification": "moon"
+      },
+      {
+        "title": "Otimização do Atendimento ao Cliente com Base de Conhecimento e FAQs",
+        "reasoning": "Atende à dor \"o suporte consome energia demais\" e \"atendimento ao cliente consome mais energia\", transformando o atendimento reativo em proativo.",
+        "description": "Estruturar uma base de conhecimento acessível aos clientes (FAQ online, artigos de ajuda) para autoatendimento e guias internos para o time de suporte, reduzindo a carga de perguntas repetitivas.",
+        "impact_score": 9,
+        "implementation_difficulty": 5,
+        "classification": "win"
+      },
+      {
+        "title": "Programa de Indicação e Parcerias Estruturado",
+        "reasoning": "Aborda a \"dependência demais de indicação\" de forma ativa, transformando um ponto fraco em um canal de aquisição robusto e escalável.",
+        "description": "Criar um programa formal de indicação para clientes satisfeitos e identificar parceiros estratégicos para gerar leads qualificados de forma recorrente e previsível, reduzindo a dependência de indicações orgânicas.",
+        "impact_score": 7,
+        "implementation_difficulty": 6,
+        "classification": "moon"
+      },
+      {
+        "title": "Mapeamento e Documentação de Processos Chave",
+        "reasoning": "A \"falta de padronização\" e o \"time sobrecarregado\" são diretamente endereçados, criando uma base para otimizações futuras e garantindo a replicabilidade.",
+        "description": "Mapear e documentar os principais processos operacionais (vendas, onboarding, entrega de curso, suporte) para identificar gargalos, padronizar etapas e facilitar o treinamento de novos colaboradores.",
+        "impact_score": 7,
+        "implementation_difficulty": 5,
+        "classification": "win"
+      },
+      {
+        "title": "Implementação de Pesquisas de Satisfação Automatizadas (NPS/CSAT)",
+        "reasoning": "Ajuda a \"identificar problemas no produto/entrega\" e a melhorar o \"suporte\", transformando feedback em insumo para melhoria contínua.",
+        "description": "Enviar pesquisas de satisfação automatizadas em pontos chave da jornada do cliente (pós-curso, pós-atendimento) para coletar feedback contínuo e identificar pontos de melhoria no produto e serviço.",
+        "impact_score": 6,
+        "implementation_difficulty": 3,
+        "classification": "win"
+      },
+      {
+        "title": "Integração de Ferramentas de Marketing e Vendas",
+        "reasoning": "A \"perda de follow-up\" e a \"dependência de indicação\" podem ser mitigadas com uma melhor orquestração do funil, garantindo que leads quentes sejam rapidamente abordados.",
+        "description": "Conectar o CRM com plataformas de automação de marketing para garantir um fluxo de dados consistente entre as áreas, permitindo um lead scoring mais preciso e a nutrição de leads de forma integrada.",
+        "impact_score": 8,
+        "implementation_difficulty": 7,
+        "classification": "moon"
+      },
+      {
+        "title": "Treinamento e Capacitação do Time em Gestão de Tempo e Ferramentas",
+        "reasoning": "Embora não seja uma solução estrutural profunda, endereça a \"equipe sobrecarregada\" com uma solução rápida de ganho de eficiência e motivação.",
+        "description": "Oferecer treinamentos práticos para o time sobre gestão de tempo, priorização de tarefas e uso eficiente das ferramentas existentes, visando aliviar a sobrecarga e aumentar a produtividade individual.",
+        "impact_score": 5,
+        "implementation_difficulty": 2,
+        "classification": "win"
+      },
+      {
+        "title": "Otimização de Conteúdo e SEO para Geração de Leads Inbound",
+        "reasoning": "Diminui a \"dependência demais de indicação\" ao criar um canal de aquisição de leads mais robusto e escalável a médio e longo prazo.",
+        "description": "Revisar e otimizar o conteúdo do site e blog da TECTalk com foco em SEO para atrair organicamente leads qualificados que buscam soluções em comunicação e soft skills, complementando as indicações.",
+        "impact_score": 7,
+        "implementation_difficulty": 6,
+        "classification": "moon"
+      },
+      {
+        "title": "Definição de SLAs para Atendimento e Suporte",
+        "reasoning": "Aborda o \"suporte consome energia demais\" e a \"falta de clareza dos números\" ao trazer estrutura e mensuração para uma área crítica.",
+        "description": "Estabelecer Service Level Agreements (SLAs) claros para os tempos de resposta e resolução do atendimento ao cliente e suporte, garantindo um serviço consistente e gerenciável, além de fornecer métricas para o \"clareza dos números\".",
+        "impact_score": 6,
+        "implementation_difficulty": 4,
+        "classification": "win"
+      },
+      {
+        "title": "Centralização e Estruturação de Dados de Alunos e Cursos",
+        "reasoning": "\"Falta clareza dos números\" e \"falta padronização\" são sintomas de dados fragmentados. Esta iniciativa cria a base para inteligência operacional e crescimento escalável.",
+        "description": "Unificar e organizar os dados de alunos, inscrições, progresso em cursos e feedback em uma única fonte de verdade, facilitando a análise e a personalização da jornada do aluno.",
+        "impact_score": 8,
+        "implementation_difficulty": 8,
+        "classification": "moon"
+      }
+    ]
+  }
+];
+
+const REPORT = REPORT_DATA[0];
+const COMPANY_LOGO = REPORT.cover.clientLogoUrl;
+const COMPANY_NAME = REPORT.cover.companyName;
+const COMPANY_DATE = REPORT.cover.reportDate;
+const summary = REPORT.summary.text;
+const possible_bottlenecks = REPORT.operationalSignals.map(item => ({
+  number: item.number,
+  title: item.signals_title,
+  description: item.signals_description
+}));
+const opportunities = REPORT.strategicOpportunities.map(item => ({
+  impact: item.impact_score,
+  effort: item.implementation_difficulty,
+  classification: item.classification,
+  title: item.title,
+  description: item.description,
+  reasoning: item.reasoning
+}));
+
+function calculateBigNumbers() {
+  return {
+    bottlenecks: possible_bottlenecks.length,
+    opportunities: opportunities.length,
+    quickWins: opportunities.filter(opp => getOpportunityCategory(opp) === 'win').length,
+    moonshots: opportunities.filter(opp => getOpportunityCategory(opp) === 'moon').length
+  };
+}
+/* ═══════════════════════════════════════════
+   FIM DOS DADOS
+═══════════════════════════════════════════ */
+</script>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-grid"></div>
+  <img
+    class="report-logo"
+    src="https://res.cloudinary.com/dblwlsuqv/image/upload/v1778604036/Name_Branco_befiwz.svg"
+    alt="Miray"
+  >
+  <div class="wrap hero-inner">
+    <div class="hero-company">
+      <div class="company-logo-wrap">
+        <img id="heroLogoImg" src="" alt="" style="display:none;">
+        <span class="company-logo-fallback" id="heroLogoFallback">?</span>
+      </div>
+      <div class="company-info">
+        <h2 id="heroCompanyName">—</h2>
+        <p id="heroCompanyMeta">—</p>
+      </div>
+    </div>
+
+    <h1 class="hero-title">
+      Diagnóstico<br>
+      <span>Estratégico</span><br>
+      Operacional
+    </h1>
+
+    <p class="hero-sub">Identificando os espaços onde dados e inteligência<br>podem ampliar o potencial da sua empresa.</p>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── ABOUT MIRAY ── -->
+<section class="summary-section">
+  <div class="wrap summary-page">
+    <div class="summary-inner">
+      <div class="summary-sidebar">
+        <div class="summary-sidebar-tag">Quem somos</div>
+        <h3>Ajudamos empresas em crescimento</h3>
+        <div class="summary-sidebar-line"></div>
+      </div>
+      <div class="summary-text">
+        <p>Empresas em crescimento começam a enfrentar um problema silencioso.</p>
+        <p><span class="green-highlight">A operação deixa de acompanhar a velocidade do negócio.</span></p>
+        <p>Processos se acumulam.<br>Decisões ficam mais lentas.<br>A equipe passa mais tempo sustentando a operação do que evoluindo ela.</p>
+        <p>A Miray existe para organizar esse crescimento.</p>
+        <p>Ajudamos empresas a recuperar tempo reduzindo processos repetitivos, ganhar espaço construindo novas oportunidades e entregar conhecimento através de dados estruturados e inteligência de mercado.</p>
+        <p>Nosso foco não é adicionar mais complexidade.<br>É construir operações mais leves, conscientes e preparadas para crescer.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── SUMMARY ── -->
+<section class="summary-section">
+  <div class="wrap summary-page">
+    <div class="summary-inner">
+      <div class="summary-sidebar">
+        <div class="summary-sidebar-tag">Resumo executivo</div>
+        <h3>O que encontramos na análise</h3>
+        <div class="summary-sidebar-line"></div>
+      </div>
+      <div class="summary-text" id="summaryText">
+        <!-- rendered by JS -->
+      </div>
+    </div>
+    <div class="hero-stats summary-stats" id="heroStats">
+      <!-- rendered by JS -->
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── BOTTLENECKS ── -->
+<section>
+  <div class="wrap">
+    <div class="section-label">Sinais operacionais</div>
+    <h2 class="section-headline">Possíveis espaços de<br>evolução na operação</h2>
+    <p class="section-sub">Gargalos operacionais percebidos a partir do contexto, estrutura e momento da empresa.</p>
+    <div class="bottleneck-grid" id="bottleneckGrid">
+      <!-- rendered by JS -->
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── MATRIX ── -->
+<section class="matrix-section">
+  <div class="wrap">
+    <div class="section-label">Oportunidades Identificadas</div>
+    <h2 class="section-headline">Mapa de<br>Oportunidades Estratégicas</h2>
+    <p class="section-sub">Uma leitura visual das oportunidades com maior potencial de impacto e viabilidade operacional.</p>
+
+    <div class="matrix-wrap">
+      <div class="matrix-chart-container">
+        <div class="matrix-chart-inner">
+          <div class="axis-label-y">Impacto</div>
+          <div class="chart-canvas-wrap">
+            <canvas id="matrixChart"></canvas>
+          </div>
+          <div class="axis-label-x">Esforço</div>
+        </div>
+      </div>
+      <div class="matrix-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> Quick Win</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--purple)"></div> Moonshot</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div> Melhoria Estrutural</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div> Baixa Prioridade</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── OPPORTUNITIES ── -->
+<section class="opportunities-section">
+  <div class="wrap">
+    <div class="section-label">Oportunidades identificadas</div>
+    <h2 class="section-headline">Definição das<br>Oportunidades Estratégicas</h2>
+    <p class="section-sub">Cada iniciativa abaixo representa uma oportunidade identificada a partir dos sinais operacionais analisados no diagnóstico.</p>
+
+    <div class="opp-grid" id="oppGrid">
+      <!-- rendered by JS -->
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── CTA ── -->
+<section class="cta-section" id="cta">
+  <div class="cta-glow"></div>
+  <div class="wrap">
+    <div class="cta-inner">
+      <div class="cta-left">
+        <div class="eyebrow">
+          <span style="width:16px;height:1px;background:var(--green);display:inline-block;"></span>
+          Como a Miray atua
+        </div>
+        <h2>Transformando os<br><em>Sinais em Realidade</em></h2>
+        <p>A Miray ajuda empresas em crescimento a organizar operações, conectar informações e transformar dados em conhecimento de negócio.</p>
+      </div>
+      <div class="cta-right">
+        <div>
+          <div class="cta-right-title">Como essas oportunidades podem sair do papel</div>
+          <div class="cta-right-sub">Uma conversa para aprofundar as oportunidades identificadas no diagnóstico.</div>
+        </div>
+        <div class="cta-features">
+          <div class="cta-feature">
+            <div class="cta-feature-icon">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M8 2L10 6L14 6.5L11 9.5L11.5 14L8 12L4.5 14L5 9.5L2 6.5L6 6L8 2Z"/>
+              </svg>
+            </div>
+            <span>Diagnóstico aprofundado das prioridades identificadas</span>
+          </div>
+          <div class="cta-feature">
+            <div class="cta-feature-icon">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="2" y="3" width="12" height="10" rx="1.5"/>
+                <path d="M5 7h6M5 9.5h4"/>
+              </svg>
+            </div>
+            <span>Plano inicial de implementação das iniciativas de maior impacto</span>
+          </div>
+          <div class="cta-feature">
+            <div class="cta-feature-icon">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M3 12L6 8L9 10L13 5"/>
+                <circle cx="13" cy="5" r="1"/>
+              </svg>
+            </div>
+            <span>Organização das prioridades para os próximos ciclos de crescimento</span>
+          </div>
+        </div>
+        <div class="cta-actions">
+          <a href="https://calendar.notion.so/meet/miraylab/consultoria" class="cta-btn" target="_blank">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
+              <rect x="2" y="3" width="12" height="11" rx="1.5"/>
+              <path d="M5 2v2M11 2v2M2 7h12"/>
+            </svg>
+            Conversar com a Miray
+          </a>
+      </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════ -->
+<script>
+/* ── helpers ── */
+function getCategory(impact, effort) {
+  if (impact >= 7 && effort <= 4) return 'win';
+  if (impact >= 7 && effort > 4)  return 'moon';
+  if (impact < 7  && effort <= 5) return 'low';
+  return 'struct';
+}
+
+function getMatrixCategory(impact, effort) {
+  const x = Number(effort);
+  const y = Number(impact);
+  if (x <= 5 && y >= 5) return 'win';
+  if (x > 5 && y >= 5) return 'moon';
+  if (x <= 5 && y < 5) return 'struct';
+  return 'low';
+}
+
+function normalizeClassification(value) {
+  const key = String(value || '').trim().toLowerCase();
+  const map = {
+    'quick-win': 'win',
+    'quick win': 'win',
+    'quickwin': 'win',
+    'win': 'win',
+    'moonshot': 'moon',
+    'moonshots': 'moon',
+    'moon': 'moon',
+    'melhoria-estrutural': 'struct',
+    'melhoria estrutural': 'struct',
+    'estrutural': 'struct',
+    'struct': 'struct',
+    'baixa-prioridade': 'low',
+    'baixa prioridade': 'low',
+    'low': 'low'
+  };
+  return map[key] || '';
+}
+
+function getOpportunityCategory(opp) {
+  return normalizeClassification(opp.classification) || getMatrixCategory(opp.impact, opp.effort);
+}
+
+const CAT_META = {
+  win:    { label: 'Quick Win',    color: '#10B981', badgeClass: 'cat-win' },
+  moon:   { label: 'Moonshot',     color: '#8B5CF6', badgeClass: 'cat-moon' },
+  struct: { label: 'Estrutural',   color: '#3B82F6', badgeClass: 'cat-struct' },
+  low:    { label: 'Baixa Prior.', color: '#F59E0B', badgeClass: 'cat-low' }
+};
+
+function getOpportunityPriority(opp) {
+  return Number(opp.impact) * (10 - Number(opp.effort));
+}
+
+function getRankedOpportunities() {
+  return [...opportunities]
+    .map((opp, index) => ({
+      ...opp,
+      priorityScore: getOpportunityPriority(opp),
+      originalIndex: index
+    }))
+    .sort((a, b) =>
+      b.priorityScore - a.priorityScore ||
+      b.impact - a.impact ||
+      a.effort - b.effort ||
+      a.originalIndex - b.originalIndex
+    )
+    .map((opp, index) => ({ ...opp, rank: index + 1 }));
+}
+
+
+/* ── DOM ── */
+function init() {
+  // hero
+  document.getElementById('heroCompanyName').textContent = COMPANY_NAME;
+  document.getElementById('heroCompanyMeta').textContent = COMPANY_DATE;
+  // logo
+  if (COMPANY_LOGO) {
+    document.getElementById('heroLogoImg').src = COMPANY_LOGO;
+    document.getElementById('heroLogoImg').style.display = 'block';
+    document.getElementById('heroLogoFallback').style.display = 'none';
+  } else {
+    document.getElementById('heroLogoFallback').textContent = COMPANY_NAME.charAt(0).toUpperCase();
+  }
+
+  // hero stats
+  const bigNumbers = calculateBigNumbers();
+  document.getElementById('heroStats').innerHTML = `
+    <div class="hero-stat">
+      <div class="hero-stat-num orange">${bigNumbers.bottlenecks}</div>
+      <div class="hero-stat-label">Gargalos mapeados</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-num white">${bigNumbers.opportunities}</div>
+      <div class="hero-stat-label">Oportunidades</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-num green">${bigNumbers.quickWins}</div>
+      <div class="hero-stat-label">Quick wins</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-num purple">${bigNumbers.moonshots}</div>
+      <div class="hero-stat-label">Moonshots</div>
+    </div>
+  `;
+
+  // summary
+  const summaryEl = document.getElementById('summaryText');
+  summary.split('\n\n').filter(Boolean).forEach(p => {
+    const el = document.createElement('p');
+    el.innerHTML = p.replace(/\b(crítico|principal|represada|60.90 dias|exatamente)\b/gi, '<strong>$1</strong>');
+    summaryEl.appendChild(el);
+  });
+
+  // bottlenecks
+  const grid = document.getElementById('bottleneckGrid');
+  possible_bottlenecks.forEach((bn, i) => {
+    grid.innerHTML += `
+      <div class="bottleneck-card">
+        <div class="bn-number">${String(bn.number || i + 1).padStart(2, '0')}</div>
+        <div class="bn-icon"></div>
+        <div class="bn-title">${bn.title}</div>
+        <div class="bn-desc">${bn.description}</div>
+      </div>
+    `;
+  });
+
+  // opportunities
+  renderOppCards();
+
+  // chart
+  initChart();
+
+  // paginacao A4 para conteudos longos
+  paginateGridSection('#bottleneckGrid', '.bottleneck-card');
+  paginateGridSection('#oppGrid', '.opp-card');
+  renderPageNumbers();
+}
+
+function paginateGridSection(gridSelector, itemSelector) {
+  const firstGrid = document.querySelector(gridSelector);
+  if (!firstGrid) return;
+
+  let section = firstGrid.closest('section');
+  let grid = firstGrid;
+  let guard = 0;
+
+  while (section && section.scrollHeight > section.clientHeight + 2 && grid.children.length > 1 && guard < 40) {
+    guard++;
+
+    const nextSection = createContinuationSection(section, grid);
+    const nextGrid = nextSection.querySelector('[data-continuation-grid]');
+    section.after(nextSection);
+
+    while (section.scrollHeight > section.clientHeight + 2 && grid.children.length > 1) {
+      nextGrid.prepend(grid.lastElementChild);
+    }
+
+    section = nextSection;
+    grid = nextGrid;
+  }
+}
+
+function createContinuationSection(sourceSection, sourceGrid) {
+  const section = document.createElement('section');
+  section.className = `${sourceSection.className} continuation-section`.trim();
+
+  const wrap = document.createElement('div');
+  wrap.className = 'wrap';
+
+  const grid = document.createElement('div');
+  grid.className = sourceGrid.className;
+  grid.dataset.continuationGrid = 'true';
+
+  wrap.appendChild(grid);
+  section.appendChild(wrap);
+  return section;
+}
+
+function renderPageNumbers() {
+  document.querySelectorAll('.page-number').forEach(el => el.remove());
+  const pages = [...document.querySelectorAll('section')];
+  const total = pages.length;
+  pages.forEach((page, index) => {
+    if (page.classList.contains('hero')) return;
+    const marker = document.createElement('div');
+    marker.className = 'page-number';
+    marker.textContent = `${String(index + 1).padStart(2, '0')} / ${String(total).padStart(2, '0')}`;
+    page.appendChild(marker);
+  });
+}
+
+function renderOppCards() {
+  const grid = document.getElementById('oppGrid');
+  grid.innerHTML = '';
+  const sorted = getRankedOpportunities();
+  sorted.forEach((opp) => {
+    const cat = getOpportunityCategory(opp);
+    const meta = CAT_META[cat];
+    grid.innerHTML += `
+      <div class="opp-card" data-cat="${cat}">
+        <div class="opp-card-meta">
+          <span class="opp-rank-pill">#${opp.rank}</span>
+          <span class="opp-cat-badge ${meta.badgeClass}">${meta.label}</span>
+        </div>
+        <div class="opp-card-top">
+          <div class="opp-title">${opp.title}</div>
+        </div>
+        <div class="opp-desc">${opp.description}</div>
+        <div class="opp-reasoning">${opp.reasoning}</div>
+        <div class="opp-metrics">
+          <div class="metric-badge">
+            <div class="metric-badge-label">Impacto</div>
+            <div class="metric-badge-value impact">${opp.impact}<span style="font-size:12px;color:var(--gray-15);font-family:var(--font-body);font-weight:300;">/10</span></div>
+          </div>
+          <div class="metric-badge">
+            <div class="metric-badge-label">Esforço</div>
+            <div class="metric-badge-value effort">${opp.effort}<span style="font-size:12px;color:var(--gray-15);font-family:var(--font-body);font-weight:300;">/10</span></div>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+}
+
+function initChart() {
+  const datasets = { win: [], moon: [], struct: [], low: [] };
+  const rankedOpportunities = getRankedOpportunities();
+  const rankByOpportunity = new Map(
+    rankedOpportunities.map((opp) => [opp.originalIndex, opp.rank])
+  );
+
+  opportunities.forEach((opp, index) => {
+    const point = {
+      x: opp.effort,
+      y: opp.impact,
+      label: opp.title,
+      priorityScore: getOpportunityPriority(opp),
+      rank: rankByOpportunity.get(index),
+      r: 13
+    };
+    const k = getOpportunityCategory(opp);
+    datasets[k].push(point);
+  });
+
+  const catConfig = [
+    { key: 'win',    label: '🚀 Quick Win',            color: '#10B981', bg: 'rgba(16,185,129,.22)' },
+    { key: 'moon',   label: '🎯 Moonshot',              color: '#8B5CF6', bg: 'rgba(139,92,246,.22)' },
+    { key: 'struct', label: '🧩 Melhoria Estrutural',   color: '#3B82F6', bg: 'rgba(59,130,246,.22)' },
+    { key: 'low',    label: '⚠️ Baixa Prioridade',      color: '#F59E0B', bg: 'rgba(245,158,11,.22)'  }
+  ];
+
+  const ctx = document.getElementById('matrixChart').getContext('2d');
+
+  function drawMatrixPill(ctx, text, ax, ay, anchor, fill, stroke, textColor) {
+    const padX = 10;
+    const radius = 10;
+    const h = 24;
+    ctx.font = "600 10px 'Inter', system-ui, sans-serif";
+    const w = Math.ceil(ctx.measureText(text).width) + padX * 2;
+    let px = ax;
+    let py = ay;
+    if (anchor === 'tr' || anchor === 'br') px = ax - w;
+    if (anchor === 'bl' || anchor === 'br') py = ay - h;
+    ctx.beginPath();
+    if (typeof ctx.roundRect === 'function') {
+      ctx.roundRect(px, py, w, h, radius);
+    } else {
+      ctx.rect(px, py, w, h);
+    }
+    ctx.fillStyle = fill;
+    ctx.fill();
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = textColor;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, px + w / 2, py + h / 2);
+  }
+
+  const quadrantPlugin = {
+    id: 'quadrant',
+    beforeDraw(chart) {
+      const { ctx, chartArea: { left, right, top, bottom, width, height } } = chart;
+      const midX = chart.scales.x.getPixelForValue(5);
+      const midY = chart.scales.y.getPixelForValue(5);
+      const colors = [
+        { x: left,  y: top,   w: midX - left,  h: midY - top,    c: 'rgba(16,185,129,.05)' },
+        { x: midX,  y: top,   w: right - midX, h: midY - top,    c: 'rgba(139,92,246,.05)' },
+        { x: left,  y: midY,  w: midX - left,  h: bottom - midY, c: 'rgba(59,130,246,.05)' },
+        { x: midX,  y: midY,  w: right - midX, h: bottom - midY, c: 'rgba(245,158,11,.05)' }
+      ];
+      ctx.save();
+      colors.forEach(q => {
+        ctx.fillStyle = q.c;
+        ctx.fillRect(q.x, q.y, q.w, q.h);
+      });
+      ctx.strokeStyle = 'rgba(255,255,255,.14)';
+      ctx.setLineDash([6, 5]);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(midX, top);
+      ctx.lineTo(midX, bottom);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(left, midY);
+      ctx.lineTo(right, midY);
+      ctx.stroke();
+      ctx.restore();
+    },
+    afterDatasetsDraw(chart) {
+      const { ctx, chartArea: { left, right, top, bottom } } = chart;
+      const inset = 10;
+      const pills = [
+        { text: 'Quick wins', anchor: 'tl', x: left + inset, y: top + inset, fill: 'rgba(16,185,129,.22)', stroke: 'rgba(16,185,129,.55)', color: '#D1FAE5' },
+        { text: 'Moonshots', anchor: 'tr', x: right - inset, y: top + inset, fill: 'rgba(139,92,246,.22)', stroke: 'rgba(139,92,246,.55)', color: '#EDE9FE' },
+        { text: 'Melhorias estruturais', anchor: 'bl', x: left + inset, y: bottom - inset, fill: 'rgba(59,130,246,.22)', stroke: 'rgba(59,130,246,.55)', color: '#DBEAFE' },
+        { text: 'Baixa prioridade', anchor: 'br', x: right - inset, y: bottom - inset, fill: 'rgba(245,158,11,.22)', stroke: 'rgba(245,158,11,.55)', color: '#FEF3C7' }
+      ];
+      ctx.save();
+      ctx.setLineDash([]);
+      pills.forEach(p => {
+        drawMatrixPill(ctx, p.text, p.x, p.y, p.anchor, p.fill, p.stroke, p.color);
+      });
+      chart.data.datasets.forEach((dataset, datasetIndex) => {
+        const meta = chart.getDatasetMeta(datasetIndex);
+        meta.data.forEach((element, pointIndex) => {
+          const raw = dataset.data[pointIndex];
+          if (!raw || !raw.rank) return;
+          const { x, y } = element;
+          ctx.fillStyle = '#FFFFFF';
+          ctx.font = "700 12px 'Inter', system-ui, sans-serif";
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(String(raw.rank), x, y);
+        });
+      });
+      ctx.restore();
+    }
+  };
+
+  window.__matrixChart = new Chart(ctx, {
+    type: 'bubble',
+    plugins: [quadrantPlugin],
+    data: {
+      datasets: catConfig.map(c => ({
+        label: c.label,
+        data: datasets[c.key],
+        backgroundColor: c.bg,
+        borderColor: c.color,
+        borderWidth: 2,
+        hoverBackgroundColor: c.color + '44',
+        hoverBorderWidth: 2.5,
+        pointStyle: 'circle'
+      }))
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      layout: { padding: { top: 4, right: 2, bottom: 12, left: 2 } },
+      scales: {
+        x: {
+          type: 'linear',
+          min: 0,
+          max: 10.4,
+          grid: { display: false },
+          border: { color: 'rgba(255,255,255,.12)' },
+          ticks: {
+            stepSize: 2,
+            includeBounds: true,
+            autoSkip: false,
+            color: '#4B5A72',
+            font: { family: "'Inter', sans-serif", size: 11 },
+            callback: v => Number(v) > 10 ? '' : v
+          },
+          title: { display: false }
+        },
+        y: {
+          type: 'linear',
+          min: 0,
+          max: 10.4,
+          grid: { display: false },
+          border: { color: 'rgba(255,255,255,.12)' },
+          ticks: {
+            stepSize: 2,
+            includeBounds: true,
+            autoSkip: false,
+            color: '#4B5A72',
+            font: { family: "'Inter', sans-serif", size: 11 },
+            callback: v => Number(v) > 10 ? '' : v
+          }
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#2b2b2b',
+          borderColor: 'rgba(255,255,255,.12)',
+          borderWidth: 1,
+          padding: 14,
+          cornerRadius: 10,
+          titleColor: '#F1F5F9',
+          titleFont: { family: "'Saira', sans-serif", size: 13, weight: '700' },
+          bodyColor: '#FFFFFF',
+          bodyFont: { family: "'Inter', sans-serif", size: 12 },
+          callbacks: {
+            title: items => items[0].raw.label,
+            label: item => [
+              `Prioridade: #${item.raw.rank} (${item.raw.priorityScore})`,
+              `Impacto: ${item.raw.y}/10`,
+              `Esforço: ${item.raw.x}/10`
+            ]
+          }
+        }
+      }
+    }
+  });
+}
+
+function refreshMatrixChartForPrint() {
+  if (window.__matrixChart && typeof window.__matrixChart.resize === 'function') {
+    window.__matrixChart.resize();
+  }
+}
+window.refreshMatrixChartForPrint = refreshMatrixChartForPrint;
+window.addEventListener('beforeprint', refreshMatrixChartForPrint);
+window.addEventListener('afterprint', refreshMatrixChartForPrint);
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
